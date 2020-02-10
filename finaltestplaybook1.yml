@@ -43,6 +43,12 @@
       login_user: ecomuser
       login_password: ecompassword
       login_unix_socket: /var/lib/mysql/mysql.sock
+      state: present
+   - name: import DB data
+     mysql_db:
+      name: ecomdb
+      login_user: ecomuser
+      login_password: ecompassword
       state: import
       name: all
       target: /tmp/db-load-script.sql
