@@ -1,0 +1,29 @@
+- name: configure httpd on centos 7
+  hosts: localhost
+  tasks:
+     - name: install packages
+       yum: name=php-sql state=latest
+     - name: install httpd
+       yum: name=httpd state=present
+     - name: altering httpd for  php
+       replace:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: 'DirectoryIndex index.html'
+        replace: "DirectoryIndex index.php"
+        backup: yes
+     - name: Enabled httpd and start
+       systemd: name=httpd enabled=yes state=started
+     - name: Install git
+       yum: name=git state=latest
+     - name: Pull the files from git repo
+       git:
+         repo:''
+         dest: /var/www/html
+     - name: update the index.php file
+       path:
+       regexp:' '
+       replace:" "
+       backup: yes
+     - name: restart httpd instace
+       service: name=httpd state=restarted
+       	

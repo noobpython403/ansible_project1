@@ -1,0 +1,81 @@
+#insatll and configure firewalld
+- name: configure firewalld
+  hosts: localhost
+  become: yes
+  become_method: sudo
+  tasks:
+   - name: install firewalld package
+     yum: name=firewalld state=latest
+   - name: enable firewalld
+     systemd: name=firewalld enabled=yes state=started
+   - name: open ports
+     firewalld:
+      port: "{{ item }}"
+      permanent: yes
+      state: enabled
+     with_items:
+      - 80/tcp
+      - 3306/tcp
+   - name: restart firewalld
+     service: name=firewalld state=restarted
+#install and configure DB
+   - name: install mariaDB
+     yum: name=mariadb-server state=latest
+   - name: inatll packages
+     yum:
+      name: MySQL-python
+      state: present
+   - name: enable DB while bootup
+     systemd: name=mariadb enabled=yes state=started
+   - name: configure user
+     mysql_user:
+      user: ecomuser
+      host: localhost
+      password: ecompassword
+      login_user: ecomuser
+      login_password: ecompassword
+      check_implicit_admin: yes
+      priv: "*.*:ALL,GRANT"
+      state: present
+   - name: configure new DB
+     mysql_db:
+      name: ecomdb
+      login_user: ecomuser
+      login_password: ecompassword
+      login_unix_socket: /var/lib/mysql/mysql.sock
+      state: import
+      name: all
+      target: /tmp/db-load-script.sql
+   - name: restart DB
+     service: name=mariadb state=restarted
+   - name: install packages
+     yum: name=php-mysql state=latest
+   - name: install httpd
+     yum: name=httpd state=present
+   - name: altering httpd for  php
+     replace:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: 'DirectoryIndex index.html'
+      replace: "DirectoryIndex index.php"
+      backup: yes
+   - name: Enabled httpd and start
+     systemd: name=httpd enabled=yes state=started
+   - name: Install git
+     yum: name=git state=latest
+   - name: get git files
+     git:
+      repo: https://github.com/kodekloudhub/learning-app-ecommerce.git
+      dest: /var/www/html
+      update: no
+   - name: change index
+     replace:
+      path: /var/www/html/index.php
+      regexp: "{{ item.original }}"
+      replace: "{{ item.new }}"
+     with_items:
+      - { original: '172.20.1.101' , new: 'localhost' }
+      - { original: 'ecomuser' , new: 'root' }
+      - { original: 'ecompassword' , new: 'osboxes.org' }
+   - name: restart httpd instace
+     service: name=httpd state=restarted
+

@@ -1,0 +1,51 @@
+#insatll firewalld
+- name: configure firewalld
+  hosts: localhost
+  become: yes
+  become_method: sudo
+  tasks:
+   - name: install firewalld package
+     yum: name=firewalld state=latest
+   - name: enable firewalld
+     systemd: name=firewalld enabled=yes state=started
+   - name: open ports
+     firewalld:
+      port: "{{ item }}"
+      permanent: yes
+      state: enabled
+     with_items:
+      - 80/tcp
+      - 3306/tcp
+   - name: restart firewalld
+     service: name=firewalld state=restarted
+#install and configure DB
+   - name: install mariaDB
+     yum: name=mariadb-server state=latest
+   - name: inatll packages
+     yum:
+      name: MySQL-python
+      state: present
+   - name: enable DB while bootup
+     systemd: name=mariadb enabled=yes state=started
+   - name: configure user
+     mysql_user:
+      user: root
+      host: localhost
+      password: osboxes.org
+      login_user: root
+      login_password: osboxes.org
+      check_implicit_admin: yes
+      priv: "*.*:ALL,GRANT"
+      state: present
+   - name: configure new DB
+     mysql_db:
+      name: ecomdb
+      login_user: root
+      login_password: osboxes.org
+      login_unix_socket: /var/lib/mysql/mysql.sock 
+      state: import
+      name: all
+      target: /tmp/db-load-script.sql
+   - name: restart DB
+     service: name=mariadb state=restarted         
+   
